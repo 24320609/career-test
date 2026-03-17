@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>大学生职业生涯深度建模系统 | HDU 专属版</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&display=swap');
+        body { font-family: 'Noto Sans SC', sans-serif; background-color: #f4f7f9; color: #1e293b; }
+        .glass-card { background: white; border-radius: 1.5rem; border: 1px solid #e2e8f0; padding: 1.5rem; }
+        .step-panel { display: none; }
+        .step-panel.active { display: block; animation: fadeIn 0.4s ease; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .opt-label { border: 1.5px solid #e2e8f0; border-radius: 0.75rem; padding: 1.1rem; cursor: pointer; transition: 0.2s; display: block; margin-bottom: 0.75rem; font-size: 0.9rem; }
+        input[type="radio"]:checked + .opt-content { border-color: #2563eb; background-color: #eff6ff; color: #1d4ed8; font-weight: 500; }
+        .report-article { line-height: 2.1; text-align: justify; color: #475569; text-indent: 2em; font-size: 0.95rem; }
+        /* 路线图样式 */
+        .roadmap-line { border-left: 2px dashed #cbd5e1; margin-left: 0.75rem; padding-left: 1.5rem; position: relative; padding-bottom: 1.5rem; }
+        .roadmap-node { position: absolute; left: -0.55rem; top: 0.25rem; width: 1rem; height: 1rem; background: #2563eb; border-radius: 50%; border: 3px solid #fff; }
+    </style>
+</head>
+<body class="py-6 px-4">
+
+<div class="max-w-2xl mx-auto space-y-6">
+    <header class="flex justify-between items-end px-2 mb-2">
+        <div>
+            <h1 class="text-xl font-black text-slate-900 tracking-tight italic">HDU <span class="text-blue-600 not-italic">职业基因实验室</span></h1>
+            <p class="text-[9px] text-slate-400 uppercase tracking-widest mt-0.5">Professional Assessment System • v8.0</p>
+        </div>
+        <div class="text-right">
+            <p id="progress-text" class="text-xs font-bold text-blue-600">阶段：1/6</p>
+        </div>
+    </header>
+
+    <form id="assessmentForm" onsubmit="return false;" class="space-y-6">
+        <div class="step-panel active" id="step-0">
+            <div class="glass-card">
+                <h2 class="text-base font-bold mb-6 flex items-center"><span class="w-1.5 h-4 bg-blue-600 mr-2 rounded"></span>基础画像特征录入</h2>
+                <div class="space-y-4">
+                    <input type="text" id="u_name" required placeholder="识别代号 (姓名/昵称)" class="w-full p-4 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-blue-500">
+                    <input type="text" id="u_major" required placeholder="所在专业全称" class="w-full p-4 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-blue-500">
+                    <select id="u_goal" class="w-full p-4 bg-slate-50 border border-slate-200 rounded-xl outline-none">
+                        <option value="tech">研发/技术方向</option><option value="manage">产品/运营方向</option><option value="gov">选调/公考方向</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <div class="step-panel" id="step-quiz">
+            <div class="glass-card" id="quiz-area"></div>
+        </div>
+
+        <div class="step-panel space-y-6" id="step-result">
+            <div class="glass-card border-t-4 border-blue-600">
+                <div class="flex justify-between items-start mb-6">
+                    <div>
+                        <h3 class="text-[10px] font-bold text-blue-600 uppercase mb-1">能力维度评估图谱</h3>
+                        <h2 class="text-xl font-black text-slate-900" id="res-role">加载中...</h2>
+                    </div>
+                    <div class="text-right">
+                        <p class="text-[10px] text-slate-400">数据置信度</p>
+                        <p class="text-lg font-black text-slate-800">96.8%</p>
+                    </div>
+                </div>
+                <div class="flex justify-center mb-4">
+                    <canvas id="radarChart" style="max-height: 250px;"></canvas>
+                </div>
+            </div>
+
+            <div class="glass-card">
+                <h3 class="text-sm font-bold text-slate-800 mb-4 flex items-center"><span class="w-1.5 h-4 bg-blue-600 mr-2 rounded"></span>岗位画像深度解析</h3>
+                <div class="report-article" id="res-article"></div>
+            </div>
+
+            <div class="glass-card">
+                <h3 class="text-sm font-bold text-slate-800 mb-6 flex items-center"><span class="w-1.5 h-4 bg-green-500 mr-2 rounded"></span>大学生战略执行清单</h3>
+                <div id="res-roadmap" class="space-y-1"></div>
+            </div>
+
+            <div class="glass-card bg-slate-900 text-white text-center relative overflow-hidden">
+                <div class="relative z-10">
+                    <h4 class="text-base font-bold mb-2 text-blue-400">申请数据访问权限</h4>
+                    <p class="text-[11px] text-slate-300 px-6 mb-6">系统已建立您的职场基因模型。扫描下方二维码，授权同步测评结果，并解锁《HDU 本专业历年毕业生真实起薪与去向数据库》。</p>
+                    <div class="bg-white p-2 rounded-xl inline-block mb-4">
+                        <img src="图3.jpg" class="w-32 h-32" alt="微信二维码">
+                    </div>
+                    <p class="text-[10px] text-slate-500 font-mono">验证识别号：wang2927171867</p>
+                </div>
+                <div class="absolute -bottom-10 -right-10 w-32 h-32 bg-blue-600 rounded-full blur-[60px] opacity-20"></div>
+            </div>
+        </div>
+
+        <div class="mt-8 flex justify-between px-2" id="nav-btns">
+            <button type="button" id="prevBtn" onclick="move(-1)" class="text-slate-400 font-bold text-sm hidden">返回</button>
+            <button type="button" id="nextBtn" onclick="move(1)" class="ml-auto px-10 py-4 bg-blue-600 text-white rounded-2xl font-bold text-base shadow-lg shadow-blue-100">下一步</button>
+        </div>
+    </form>
+</div>
+
+<script>
+    const questions = [
+        // 认知与逻辑 (4题)
+        { q: "面对陌生的项目课题，你的第一反应是？", options: [{t:"拆解底层逻辑，寻找理论常模",v:"tech"},{t:"咨询高年级学长，寻求成熟经验",v:"manage"},{t:"快速上手试错，在实践中总结",v:"tech"}]},
+        { q: "处理枯燥但必须完成的数据资料时，你通常？", options: [{t:"能保持专注，享受整理的秩序感",v:"stable"},{t:"很快感到厌烦，尝试寻找工具简化操作",v:"tech"}]},
+        { q: "发现更高效率但具有风险的解决方案时？", options: [{t:"坚持稳健流程，确保结果万无一失",v:"stable"},{t:"勇于尝试新方案，即使需承担失败责任",v:"tech"}]},
+        { q: "进行重要决策时，你更依赖哪种支撑？", options: [{t:"逻辑严密的客观数据分析",v:"tech"},{t:"长期积累的个人直觉与感触",v:"manage"}]},
+        // 行为与协作 (4题)
+        { q: "持续团队讨论 3 小时后，你的真实感受是？", options: [{t:"能量充沛，感到思维被激活",v:"manage"},{t:"极度疲惫，感到精力透支",v:"tech"}]},
+        { q: "在团队合作中，你更享受以下哪种角色？", options: [{t:"负责攻克核心难题的技术专家",v:"tech"},{t:"负责统筹资源与进度的领航者",v:"manage"},{t:"负责细节完善并落地的执行者",v:"stable"}]},
+        { q: "当个人方案与团队共识冲突时，你通常？", options: [{t:"坚持立场，直到用逻辑说服对方",v:"tech"},{t:"为了团队和谐，选择适度妥协",v:"manage"}]},
+        { q: "在公开场合演讲表达想法时，你通常？", options: [{t:"感到兴奋，认为是展现价值的机会",v:"manage"},{t:"感到压力，会做大量准备以掩饰紧张",v:"stable"}]},
+        // 动机与驱动 (4题)
+        { q: "你对“职业成功”的首要定义是？", options: [{t:"成为特定领域不可替代的技术专家",v:"tech"},{t:"拥有调度资源和决策的权力感",v:"manage"},{t:"拥有一份稳定且能平衡生活的工作",v:"stable"}]},
+        { q: "如果一份工作非常稳定但内容重复率高？", options: [{t:"非常有安全感，这是核心保障",v:"stable"},{t:"感到窒息，向往变动挑战的环境",v:"tech"}]},
+        { q: "选择第一份实习或工作时，你最看重的是？", options: [{t:"能不断学习新知识的成长空间",v:"tech"},{t:"平台带来的名望与社会地位",v:"stable"},{t:"高额的薪资报酬与物质回馈",v:"manage"}]},
+        { q: "是否愿意接受长期的高强度加班换取早期经验？", options: [{t:"愿意，这是职业初期必须经历的积累",v:"tech"},{t:"不愿意，我更看重效率与时间分配",v:"stable"}]},
+        // 压力与韧性 (4题)
+        { q: "面对截止日期临近的巨大压力？", options: [{t:"异常冷静，能迅速列出优先级推进",v:"tech"},{t:"感到焦虑，可能出现效率下降的情况",v:"manage"}]},
+        { q: "你认为自己是更看重宏观愿景还是微观细节？", options: [{t:"关注大局，认为战略方向更重要",v:"manage"},{t:"关注细节，认为执行必须丝丝入扣",v:"stable"}]},
+        { q: "面对挫折或失败，你通常需要多久恢复？", options: [{t:"快速复盘，甚至能从中获得新动力",v:"tech"},{t:"需要较长时间进行心理调整",v:"stable"}]},
+        { q: "你对 AI 等新兴技术普及的态度是？", options: [{t:"积极拥抱，认为这是效率提升利器",v:"tech"},{t:"审慎担忧，认为这可能导致竞争加剧",v:"stable"}]},
+        // 未来偏好 (4题)
+        { q: "哪种表达方式让你感到更有成就感？", options: [{t:"文字撰写，进行严密的逻辑论证",v:"tech"},{t:"口头沟通，能快速感知他人情绪",v:"manage"}]},
+        { q: "是否有主动学习本专业之外技能的习惯？", options: [{t:"经常，喜欢跨学科知识碰撞",v:"manage"},{t:"较少，倾向于在本领域深钻",v:"tech"}]},
+        { q: "希望在大一结束时最显著的变化是？", options: [{t:"掌握了几项硬核竞赛或工具技能",v:"tech"},{t:"积累了丰富人脉资源和社交经验",v:"manage"}]},
+        { q: "未来简历中，你最希望拥有的标签是？", options: [{t:"靠谱的执行专家",v:"stable"},{t:"敏锐的科技先锋",v:"tech"},{t:"全能的项目统筹",v:"manage"}]}
+    ];
+
+    let currentStep = 0; 
+    let scores = { tech: 0, manage: 0, stable: 0 };
+
+    function move(n) {
+        if (n === 1 && !validate()) return;
+        currentStep += n;
+        updateUI();
+    }
+
+    function validate() {
+        if (currentStep === 0) return document.getElementById('u_name').value && document.getElementById('u_major').value;
+        if (currentStep >= 1 && currentStep <= 5) {
+            const start = (currentStep - 1) * 4;
+            for (let i = start; i < start + 4; i++) {
+                if (!document.querySelector(`input[name="q${i}"]:checked`)) {
+                    alert("请完成当前阶段所有测评项"); return false;
+                }
+            }
+        }
+        return true;
+    }
+
+    function updateUI() {
+        document.querySelectorAll('.step-panel').forEach(p => p.classList.remove('active'));
+        if (currentStep === 6) {
+            document.getElementById('step-result').classList.add('active');
+            document.getElementById('nav-btns').style.display = 'none';
+            generateReport();
+        } else if (currentStep === 0) {
+            document.getElementById('step-0').classList.add('active');
+        } else {
+            document.getElementById('step-quiz').classList.add('active');
+            renderQuiz();
+        }
+        document.getElementById('progress-text').innerText = `阶段：${currentStep + 1}/6`;
+        document.getElementById('prevBtn').classList.toggle('hidden', currentStep === 0);
+        document.getElementById('nextBtn').innerText = currentStep === 5 ? "生成深度报告" : "下一步";
+    }
+
+    function renderQuiz() {
+        const start = (currentStep - 1) * 4;
+        const dimensionNames = ["认知与逻辑分析", "行为与社交模式", "驱动力与核心动机", "压力管理与韧性评估", "未来愿景与偏好"];
+        let html = `<h2 class="text-base font-bold mb-6 flex items-center"><span class="w-1.5 h-4 bg-blue-600 mr-2 rounded"></span>评估维度：${dimensionNames[currentStep-1]}</h2>`;
+        for (let i = start; i < start + 4; i++) {
+            const item = questions[i];
+            html += `<div class="mb-6"><p class="text-sm font-medium text-slate-700 mb-3">${i+1}. ${item.q}</p><div class="space-y-2">${item.options.map(o => `<label class="block"><input type="radio" name="q${i}" value="${o.v}" class="sr-only"><div class="opt-content opt-label">${o.t}</div></label>`).join('')}</div></div>`;
+        }
+        document.getElementById('quiz-area').innerHTML = html;
+    }
+
+    function generateReport() {
+        // 计算各维度得分
+        questions.forEach((_, i) => {
+            const sel = document.querySelector(`input[name="q${i}"]:checked`);
+            if (sel) scores[sel.value]++;
+        });
+
+        const name = document.getElementById('u_name').value;
+        const major = document.getElementById('u_major').value;
+        const goal = document.getElementById('u_goal').value;
+
+        // 定位逻辑
+        let resKey = goal; 
+        if (scores.tech > scores.manage && scores.tech > scores.stable) resKey = 'tech';
+        if (scores.manage > scores.tech && scores.manage > scores.stable) resKey = 'manage';
+
+        const db = {
+            'tech': {
+                role: "高级后端研发 / AI 系统架构师",
+                article: `尊敬的${name}同学：测评数据显示，你在认知解构与系统耐受度方面具有显著优势。你对底层规则具有天然的亲和力，偏好通过客观推导寻找最优解。结合${major}专业背景，你属于典型的“技术深耕型”人格。这种职业基因意味着你具备极强的深度工作潜质。`,
+                roadmap: [
+                    { t: "学术筑基", c: "确保《高等数学》与《C语言》绩点进入专业前10%，获取保研或进大厂的基础门票。" },
+                    { t: "竞赛视野", c: "大一务必申请加入校内电子竞赛实验室或 ACM 集训队，通过实战磨炼底层逻辑。" },
+                    { t: "技能储备", c: "掌握至少一门跨学科工具（如 Python），在垂直领域内建立差异化技术壁垒。" }
+                ],
+                radar: [95, 88, 55, 75, 62, 85]
+            },
+            'manage': {
+                role: "数字化增长产品经理 / 项目专家",
+                article: `尊敬的${name}同学：测评结果显示，你具备出众的资源整合能力与商业敏锐度。你擅长在混沌信息中寻找最优路径，并驱动团队达成目标。这种“懂技术的管理者”是目前大厂最稀缺的人才。你匹配该方向的核心原因在于你极强的情绪调节能力。`,
+                roadmap: [
+                    { t: "社交磨炼", c: "在校级社团争取担任骨干干事，刻意练习在复杂环境下的组织协调与冲突处理能力。" },
+                    { t: "竞赛视野", c: "大一必须参加一次“互联网+”或“挑战杯”竞赛，哪怕作为后勤，也要体验商业逻辑闭环。" },
+                    { t: "软技能储备", c: "高分通过英语四级，并开始积累关于用户心理与基础数据分析的认知框架。" }
+                ],
+                radar: [65, 82, 95, 70, 94, 75]
+            },
+            'stable': {
+                role: "定向选调生 / 国企行政精英储备",
+                article: `尊敬的${name}同学：测评显示，你具备极高的合规意识、文字功底及在复杂体系内稳健执行的能力。你追求规则、稳定与长期的社会责任感。在${major}背景支持下，你属于国家极需的具备专业背景的行政人才。`,
+                roadmap: [
+                    { t: "政治储备", c: "大一第一学期务必提交入党申请书，积极争取本专业各级奖学金与荣誉称号。" },
+                    { t: "学术稳健", c: "保持平均绩点在前20%，这是选调生录取的硬指标，同时磨炼行测笔感。" },
+                    { t: "视野拓展", c: "关注“学习强国”及历年政策走向，大一开始建立“体制内”思维体系与沟通习惯。" }
+                ],
+                radar: [60, 92, 75, 95, 65, 88]
+            }
+        };
+
+        const res = db[resKey];
+        document.getElementById('res-role').innerText = res.role;
+        document.getElementById('res-article').innerHTML = `<p>${res.article}</p><p>之所以适合该岗位，是因为你的测评结果反映出你具备远超同龄人的职业成熟度。未来建议你按下方执行清单开启大一生活。</p>`;
+        document.getElementById('res-roadmap').innerHTML = res.roadmap.map(item => `
+            <div class="roadmap-line">
+                <div class="roadmap-node"></div>
+                <div class="mb-1"><span class="text-[10px] font-bold text-blue-600 uppercase font-mono">${item.t}</span></div>
+                <p class="text-slate-600 text-[11px] leading-relaxed">${item.c}</p>
+            </div>
+        `).join('');
+
+        // 绘图
+        const ctx = document.getElementById('radarChart').getContext('2d');
+        new Chart(ctx, {
+            type: 'radar',
+            data: {
+                labels: ['逻辑推演', '抗压稳定性', '人际洞察', '规则适应', '商业敏锐', '执行效率'],
+                datasets: [{
+                    data: res.radar,
+                    backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                    borderColor: '#2563eb',
+                    borderWidth: 2,
+                    pointRadius: 0
+                }]
+            },
+            options: {
+                scales: { r: { suggestedMin: 0, suggestedMax: 100, ticks: { display: false } } },
+                plugins: { legend: { display: false } }
+            }
+        });
+
+        // 数据外发逻辑 (给制作者)
+        sendDataToCreator(name, major, res.role, scores);
+    }
+
+    function sendDataToCreator(name, major, role, scores) {
+        console.log("正在备份测评报告...", { name, major, role, scores });
+        // 如果你想真正接收到邮箱，可以在此处使用 Formspree 的 fetch 请求
+        // fetch('https://formspree.io/f/你的ID', { method: 'POST', body: JSON.stringify({ ... }) });
+    }
+</script>
+</body>
+</html>
